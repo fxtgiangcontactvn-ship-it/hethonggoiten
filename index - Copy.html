@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Gọi Số & Tên</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        medical: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            900: '#0c4a6e',
+                            darkBg: '#0b1329',
+                            cardDark: '#131f3d',
+                            accent: '#00f2fe'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); }
+        ::-webkit-scrollbar-thumb { background: #0ea5e9; border-radius: 4px; }
+        .marquee-content { display: inline-block; white-space: nowrap; animation: marquee 25s linear infinite; }
+        @keyframes marquee { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
+        
+        @keyframes spotlightZoom {
+            0% { transform: scale(1); box-shadow: 0 0 20px rgba(14, 165, 233, 0.4); }
+            50% { transform: scale(1.03); box-shadow: 0 0 50px rgba(0, 242, 254, 0.9); }
+            100% { transform: scale(1); box-shadow: 0 0 20px rgba(14, 165, 233, 0.4); }
+        }
+        .animate-spotlight {
+            animation: spotlightZoom 1.5s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 dark:bg-medical-darkBg text-slate-800 dark:text-slate-100 min-h-screen flex flex-col transition-colors duration-300 select-none overflow-x-hidden">
+
+    <!-- TOP HEADER -->
+    <header class="bg-white/90 dark:bg-medical-cardDark/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-4 py-3 sticky top-0 z-30 shadow-md transition-colors">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div>
+                    <h1 class="text-xl md:text-2xl font-extrabold tracking-tight bg-gradient-to-r from-medical-600 to-cyan-500 dark:from-cyan-400 dark:to-medical-400 bg-clip-text text-transparent">
+                        HỌ ĐẠO TÂN THÀNH - GIÁO PHẬN CẦN THƠ
+                    </h1>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 font-medium flex items-center gap-2">
+                        <span>Ban Truyền Thông Họ Đạo Tân Thành</span>
+                        <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                        <span id="syncStatusBadge" class="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                            <i class="fa-solid fa-circle-check text-[10px]"></i> Sẵn sàng
+                        </span>
+                    </p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3 md:gap-6 ml-auto">
+                <div class="text-right hidden sm:block border-r border-slate-200 dark:border-slate-700 pr-4">
+                    <div id="liveClock" class="text-2xl font-black tracking-wider text-medical-700 dark:text-cyan-300 font-mono">00:00:00</div>
+                    <div id="liveDate" class="text-xs text-slate-500 dark:text-slate-400 font-medium">Thứ ..., --/--/----</div>
+                </div>
+
+                <div class="flex p-1 bg-slate-200 dark:bg-slate-800 rounded-xl text-xs font-bold">
+                    <button id="btnViewTV" onclick="switchView('tv')" class="px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 bg-medical-600 text-white shadow">
+                        <i class="fa-solid fa-tv"></i> <span class="hidden md:inline">Màn hình TV</span>
+                    </button>
+                    <button id="btnViewDoctor" onclick="switchView('doctor')" class="px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
+                        <i class="fa-solid fa-user-doctor"></i> <span class="hidden md:inline">Bàn Điều Khiển</span>
+                    </button>
+                </div>
+
+                <div class="flex items-center gap-1.5">
+                    <button onclick="toggleAudio()" id="btnAudioToggle" class="p-2.5 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 transition" title="Bật/Tắt âm thanh">
+                        <i id="audioIcon" class="fa-solid fa-volume-high text-emerald-500"></i>
+                    </button>
+                    <button onclick="openSettingsModal()" class="p-2.5 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 transition" title="Cấu hình & Quản lý phòng">
+                        <i class="fa-solid fa-gear"></i>
+                    </button>
+                    <button onclick="toggleDarkMode()" class="p-2.5 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 transition" title="Đổi giao diện">
+                        <i class="fa-solid fa-moon dark:hidden"></i>
+                        <i class="fa-solid fa-sun hidden dark:inline text-amber-400"></i>
+                    </button>
+                    <button onclick="toggleFullScreen()" class="p-2.5 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 transition hidden lg:block" title="Toàn màn hình">
+                        <i class="fa-solid fa-expand"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTAINER -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 flex flex-col gap-6">
+
+        <!-- VIEW 1: TV DISPLAY -->
+        <div id="viewTVMode" class="flex flex-col gap-6">
+            <div id="tvActiveCardContainer" class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-medical-600 via-medical-700 to-slate-900 text-white p-6 md:p-8 shadow-2xl border border-cyan-400/30 transition-all duration-500">
+                <div class="flex items-center justify-between mb-4 border-b border-white/10 pb-3">
+                    <div class="flex items-center gap-3">
+                        <span class="relative flex h-4 w-4">
+                          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                          <span class="relative inline-flex rounded-full h-4 w-4 bg-emerald-500"></span>
+                        </span>
+                        <span class="text-sm font-bold uppercase tracking-widest text-cyan-300">Đang Hỗ Trợ</span>
+                    </div>
+                    <div class="bg-white/10 backdrop-blur-md px-4 py-1 rounded-full text-xs font-semibold text-cyan-200 border border-white/10 flex items-center gap-2">
+                        <i class="fa-solid fa-door-open"></i> <span id="tvCurrentRoom">Phòng 01</span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center py-2">
+                    <div class="md:col-span-4 flex flex-col items-center justify-center bg-white/10 rounded-2xl p-6 border border-white/15">
+                        <span class="text-xs font-medium uppercase tracking-wider text-slate-300 mb-1">Số Thứ Tự</span>
+                        <span id="tvCurrentSTT" class="text-6xl md:text-7xl font-black text-cyan-300 font-mono tracking-tight">A-012</span>
+                    </div>
+                    <div class="md:col-span-8 flex flex-col justify-center text-center md:text-left">
+                        <div class="inline-block self-center md:self-start mb-2 px-3 py-1 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-semibold">
+                            <i class="fa-solid fa-stethoscope mr-1"></i> Đang Hỗ Trợ
+                        </div>
+                        <h2 id="tvCurrentName" class="text-3xl md:text-5xl font-extrabold tracking-tight text-white mb-2">NGUYỄN VĂN AN</h2>
+                        <div class="flex flex-wrap items-center justify-center md:justify-start gap-4 text-slate-200 text-sm md:text-base font-medium">
+                            <span class="flex items-center gap-1.5"><i class="fa-regular fa-calendar text-cyan-300"></i> Năm sinh: <strong id="tvCurrentYOB" class="text-white">1988</strong></span>
+                            <span class="hidden md:inline text-white/30">•</span>
+                            <span class="flex items-center gap-1.5"><i class="fa-solid fa-user-doctor text-cyan-300"></i> Người Hỗ Trợ: <strong id="tvCurrentDoctor" class="text-white">Fx. Nguyễn Trường Giang</strong></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Waiting List -->
+            <div class="bg-white dark:bg-medical-cardDark rounded-3xl p-6 shadow-xl border border-slate-200 dark:border-slate-800 flex flex-col transition-colors">
+                <div class="flex flex-wrap items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-200 dark:border-slate-800">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2.5 rounded-xl bg-medical-50 dark:bg-medical-900/50 text-medical-600 dark:text-cyan-400">
+                            <i class="fa-solid fa-list-ol text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold text-slate-800 dark:text-white">DANH SÁCH CHỜ KẾ TIẾP</h3>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Quý khách vui lòng theo dõi màn hình để đến lượt</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        <select id="tvRoomFilter" onchange="filterQueue()" class="bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-xs font-semibold rounded-xl px-3 py-2 border border-slate-300 dark:border-slate-700">
+                            <option value="ALL">Tất cả phòng</option>
+                        </select>
+                        <span id="waitingCountBadge" class="bg-medical-500 text-white text-xs font-extrabold px-3 py-1.5 rounded-full shadow">0 Đang chờ</span>
+                    </div>
+                </div>
+
+                <div id="tvWaitingGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+                <div id="tvEmptyState" class="hidden py-12 text-center text-slate-400">
+                    <i class="fa-solid fa-user-clock text-4xl mb-3 opacity-40"></i>
+                    <p class="font-semibold text-base">Hiện tại không có ai trong hàng chờ.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW 2: DOCTOR CONTROL PANEL -->
+        <div id="viewDoctorMode" class="hidden flex-col gap-6">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <div class="lg:col-span-7 flex flex-col gap-6">
+                    <div class="bg-white dark:bg-medical-cardDark p-6 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-800 transition-colors">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                                <i class="fa-solid fa-sliders text-medical-500"></i> Điều khiển phòng
+                            </h3>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Chọn Phòng</label>
+                                <select id="docRoomSelect" onchange="onDoctorRoomChange()" class="w-full bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100 text-sm font-semibold rounded-xl p-3 border border-slate-300 dark:border-slate-700"></select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Tên Người Hỗ Trợ (Của phòng này)</label>
+                                <input type="text" id="docNameInput" onchange="saveDoctorInfo()" class="w-full bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100 text-sm font-semibold rounded-xl p-3 border border-slate-300 dark:border-slate-700" placeholder="Nhập tên rồi bấm ra ngoài để lưu...">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white dark:bg-medical-cardDark p-6 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-800 flex flex-col gap-4 transition-colors">
+                        <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-400">Thao Tác Gọi</h4>
+                        <div class="p-4 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                            <div>
+                                <span class="text-xs text-slate-500 dark:text-slate-400 block font-medium">Đang hỗ trợ:</span>
+                                <div id="docActivePatientName" class="text-lg font-bold text-medical-600 dark:text-cyan-300">Chưa có người</div>
+                            </div>
+                            <span id="docActiveSTT" class="text-2xl font-black font-mono bg-medical-500 text-white px-3 py-1 rounded-xl">--</span>
+                        </div>
+
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            <button type="button" onclick="callNextPatient()" class="col-span-2 py-4 px-4 bg-gradient-to-r from-medical-500 to-cyan-500 text-white font-extrabold rounded-2xl shadow-lg flex items-center justify-center gap-2 cursor-pointer hover:opacity-95">
+                                <i class="fa-solid fa-bullhorn text-xl"></i> GỌI TIẾP THEO
+                            </button>
+                            <button type="button" onclick="recallCurrentPatient()" class="py-4 px-3 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-2xl flex items-center justify-center gap-2 text-sm cursor-pointer">
+                                <i class="fa-solid fa-rotate-right"></i> Gọi Lại
+                            </button>
+                            <button type="button" onclick="completeCurrentPatient()" class="py-4 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl flex items-center justify-center gap-2 text-sm cursor-pointer">
+                                <i class="fa-solid fa-circle-check"></i> Xong
+                            </button>
+                        </div>
+
+                        <div class="flex gap-3">
+                            <button type="button" onclick="skipCurrentPatient()" class="flex-1 py-2.5 px-4 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-semibold rounded-xl text-xs flex items-center justify-center gap-2 cursor-pointer">
+                                <i class="fa-solid fa-forward-step"></i> Bỏ qua
+                            </button>
+                            <button type="button" onclick="openAddPatientModal()" class="flex-1 py-2.5 px-4 bg-cyan-600/10 hover:bg-cyan-600/20 text-cyan-600 dark:text-cyan-400 font-semibold rounded-xl border border-cyan-500/35 text-xs flex items-center justify-center gap-2 cursor-pointer">
+                                <i class="fa-solid fa-user-plus"></i> + Thêm người dùng
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-5 bg-white dark:bg-medical-cardDark p-6 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-800 flex flex-col transition-colors">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                            <i class="fa-solid fa-users text-medical-500"></i> Danh sách chờ phòng này
+                        </h3>
+                    </div>
+                    <div class="overflow-y-auto max-h-[420px] rounded-xl border border-slate-200 dark:border-slate-800">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 uppercase sticky top-0 font-bold">
+                                <tr>
+                                    <th class="p-3">STT</th>
+                                    <th class="p-3">Họ và Tên</th>
+                                    <th class="p-3">Năm sinh</th>
+                                    <th class="p-3 text-right">Xử lý</th>
+                                </tr>
+                            </thead>
+                            <tbody id="docQueueTableBody" class="divide-y divide-slate-200 dark:divide-slate-800 font-medium"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- POPUP MODAL -->
+    <div id="callPopupModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-lg z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-gradient-to-b from-medical-900 to-slate-900 border-2 border-cyan-400 rounded-3xl max-w-2xl w-full p-8 text-center text-white shadow-2xl relative">
+            <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-cyan-400/20 text-cyan-300 border border-cyan-400/30 text-xs font-bold uppercase tracking-widest mb-6">
+                <i class="fa-solid fa-volume-high"></i> Đang Gọi
+            </div>
+            <div class="text-xs uppercase font-extrabold text-slate-400 mb-2">Số Thứ Tự</div>
+            <div id="popupSTT" class="text-7xl font-black text-cyan-300 font-mono mb-4">A-000</div>
+            <h2 id="popupName" class="text-3xl md:text-5xl font-black text-white mb-4 uppercase">TÊN NGƯỜI DÙNG</h2>
+            <div class="text-lg font-bold text-slate-300 bg-white/10 py-3 px-6 rounded-2xl inline-block mb-6">
+                Vào: <span id="popupRoom" class="text-cyan-300 font-extrabold">Phòng 01</span>
+            </div>
+            <div>
+                <button type="button" onclick="closeCallPopup()" class="px-6 py-2.5 bg-slate-800 text-slate-300 rounded-xl text-xs font-semibold cursor-pointer">Đóng cửa sổ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADD PATIENT MODAL -->
+    <div id="addPatientModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-medical-cardDark rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 transition-colors">
+            <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-200 dark:border-slate-800">
+                <h3 class="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-user-plus text-medical-500"></i> Thêm người dùng & Phòng mới
+                </h3>
+                <button type="button" onclick="closeAddPatientModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <form id="addPatientForm" onsubmit="handleAddPatient(event)" class="space-y-4 text-xs font-semibold">
+                <div>
+                    <label class="block text-slate-600 dark:text-slate-400 mb-1">Số Thứ Tự (STT)</label>
+                    <input type="text" id="inputSTT" required class="w-full bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white p-3 rounded-xl border border-slate-300 dark:border-slate-700" placeholder="VD: A-015">
+                </div>
+                <div>
+                    <label class="block text-slate-600 dark:text-slate-400 mb-1">Họ và Tên</label>
+                    <input type="text" id="inputName" required class="w-full bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white p-3 rounded-xl border border-slate-300 dark:border-slate-700" placeholder="VD: Trần Văn B">
+                </div>
+                <div>
+                    <label class="block text-slate-600 dark:text-slate-400 mb-1">Năm Sinh</label>
+                    <input type="number" id="inputYOB" value="1990" required class="w-full bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white p-3 rounded-xl border border-slate-300 dark:border-slate-700">
+                </div>
+                <div>
+                    <label class="block text-slate-600 dark:text-slate-400 mb-1">Phòng</label>
+                    <div class="flex gap-2">
+                        <select id="inputRoomSelect" class="flex-1 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white p-3 rounded-xl border border-slate-300 dark:border-slate-700"></select>
+                        <button type="button" onclick="promptAddRoom()" class="px-3 bg-medical-500 hover:bg-medical-600 text-white rounded-xl cursor-pointer" title="Thêm phòng mới">
+                            <i class="fa-solid fa-plus"></i> Thêm phòng
+                        </button>
+                    </div>
+                </div>
+
+                <div class="pt-2 flex gap-3">
+                    <button type="button" onclick="closeAddPatientModal()" class="flex-1 py-3 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl cursor-pointer">Hủy</button>
+                    <button type="submit" class="flex-1 py-3 bg-medical-600 text-white rounded-xl font-bold shadow-lg cursor-pointer">Thêm Vào Hàng Chờ</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- SETTINGS MODAL -->
+    <div id="settingsModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-medical-cardDark rounded-3xl max-w-xl w-full p-6 md:p-8 shadow-2xl border border-slate-200 dark:border-slate-800 transition-colors max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-6 pb-4 border-b border-slate-200 dark:border-slate-800">
+                <h3 class="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-medical-500"></i> Cấu Hình Giọng Đọc & Quản Lý Phòng
+                </h3>
+                <button type="button" onclick="closeSettingsModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+
+            <div class="space-y-6 text-xs font-semibold">
+                <div>
+                    <label class="block text-slate-600 dark:text-slate-400 mb-1">Google Apps Script Web App URL</label>
+                    <input type="text" id="cfgSheetUrl" placeholder="https://script.google.com/macros/s/.../exec" class="w-full bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 font-mono text-[11px]">
+                </div>
+
+                <div class="space-y-3 pt-4 border-t border-slate-200 dark:border-slate-800">
+                    <h4 class="text-xs uppercase font-extrabold text-amber-500 tracking-wider flex items-center gap-1.5">
+                        <i class="fa-solid fa-microphone-lines"></i> Tùy chỉnh Giọng đọc & Chuông báo
+                    </h4>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="text-slate-600 dark:text-slate-400">Tốc độ đọc (Speed):</label>
+                                <span id="lblSpeechRate" class="text-amber-500 font-bold font-mono">0.9x</span>
+                            </div>
+                            <input type="range" id="cfgSpeechRate" min="0.6" max="1.3" step="0.05" value="0.9" oninput="document.getElementById('lblSpeechRate').innerText = parseFloat(this.value).toFixed(2) + 'x'" class="w-full accent-amber-500">
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="text-slate-600 dark:text-slate-400">Cao độ (Pitch):</label>
+                                <span id="lblSpeechPitch" class="text-amber-500 font-bold font-mono">1.0</span>
+                            </div>
+                            <input type="range" id="cfgSpeechPitch" min="0.7" max="1.3" step="0.05" value="1.0" oninput="document.getElementById('lblSpeechPitch').innerText = parseFloat(this.value).toFixed(2)" class="w-full accent-amber-500">
+                        </div>
+                    </div>
+
+                    <div class="pt-1">
+                        <button type="button" onclick="testVoiceCall()" class="w-full py-2.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-xl font-bold flex items-center justify-center gap-2 border border-amber-500/30 transition cursor-pointer">
+                            <i class="fa-solid fa-volume-high"></i> Thử chuông Ding-Dong & Phát âm Tiếng Việt
+                        </button>
+                    </div>
+                </div>
+
+                <div class="pt-4 border-t border-slate-200 dark:border-slate-800">
+                    <label class="block text-slate-600 dark:text-slate-400 mb-1">Danh sách phòng hiện có (Bấm × để xóa phòng):</label>
+                    <div id="settingsRoomList" class="flex flex-wrap gap-2 mb-3"></div>
+                    <div class="flex gap-2">
+                        <input type="text" id="newRoomInputText" placeholder="Nhập tên phòng mới..." class="flex-1 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white p-2.5 rounded-xl border border-slate-300 dark:border-slate-700">
+                        <button type="button" onclick="addNewRoomFromSettings()" class="px-4 py-2 bg-medical-600 text-white rounded-xl font-bold cursor-pointer">Thêm Phòng</button>
+                    </div>
+                </div>
+
+                <div class="pt-4 flex gap-3 border-t border-slate-200 dark:border-slate-800">
+                    <button type="button" onclick="closeSettingsModal()" class="flex-1 py-2.5 bg-medical-600 text-white rounded-xl font-bold shadow-lg cursor-pointer">Lưu & Đóng</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT LOGIC -->
+    <script>
+        const DEFAULT_PATIENTS = [
+            { id: 1, stt: 'A-012', name: 'NGUYỄN VĂN AN', yob: '1988', room: 'Phòng 01', doctor: 'Fx. Nguyễn Trường Giang', status: 'examining' },
+            { id: 2, stt: 'A-013', name: 'TRẦN THỊ BÍCH', yob: '1995', room: 'Phòng 01', doctor: 'Fx. Nguyễn Trường Giang', status: 'waiting' },
+            { id: 3, stt: 'B-005', name: 'PHẠM MINH PHÚC', yob: '1976', room: 'Phòng 02', doctor: 'Bs. Trần Thu Trang', status: 'waiting' }
+        ];
+
+        let state = {
+            patients: JSON.parse(localStorage.getItem('hospital_patients')) || DEFAULT_PATIENTS,
+            customRooms: JSON.parse(localStorage.getItem('hospital_custom_rooms')) || ['Phòng 01', 'Phòng 02', 'Phòng 03'],
+            roomDoctors: JSON.parse(localStorage.getItem('hospital_room_doctors')) || { 'Phòng 01': 'Fx. Nguyễn Trường Giang', 'Phòng 02': 'Bs. Trần Thu Trang', 'Phòng 03': 'Ban Hỗ Trợ' },
+            currentRoomFilter: 'ALL',
+            doctorActiveRoom: 'Phòng 01',
+            audioEnabled: true,
+            googleSheetUrl: localStorage.getItem('hospital_sheet_url') || '',
+            speechRate: parseFloat(localStorage.getItem('hospital_speech_rate')) || 0.9,
+            speechPitch: parseFloat(localStorage.getItem('hospital_speech_pitch')) || 1.0
+        };
+
+        let isSyncing = false;
+        let autoSyncTimer = null;
+        let audioCtx = null;
+        let spotlightTimer = null;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            updateClock();
+            setInterval(updateClock, 1000);
+            document.getElementById('cfgSheetUrl').value = state.googleSheetUrl;
+            document.getElementById('cfgSpeechRate').value = state.speechRate;
+            document.getElementById('lblSpeechRate').innerText = state.speechRate.toFixed(2) + 'x';
+            document.getElementById('cfgSpeechPitch').value = state.speechPitch;
+            document.getElementById('lblSpeechPitch').innerText = state.speechPitch.toFixed(2);
+            renderAll();
+            startPolling();
+        });
+
+        function getAvailableRooms() {
+            const roomsSet = new Set(state.customRooms);
+            state.patients.forEach(p => {
+                if (p.room) roomsSet.add(p.room.trim());
+            });
+            return Array.from(roomsSet);
+        }
+
+        function getCurrentDoctorName() {
+            const room = state.doctorActiveRoom;
+            if (!state.roomDoctors[room]) {
+                state.roomDoctors[room] = 'Fx. Nguyễn Trường Giang';
+            }
+            return state.roomDoctors[room];
+        }
+
+        function updateRoomDropdowns() {
+            const rooms = getAvailableRooms();
+            
+            const tvFilter = document.getElementById('tvRoomFilter');
+            const currentTvVal = tvFilter.value;
+            tvFilter.innerHTML = `<option value="ALL">Tất cả phòng</option>` + rooms.map(r => `<option value="${r}">${r}</option>`).join('');
+            if ([...tvFilter.options].some(o => o.value === currentTvVal)) tvFilter.value = currentTvVal;
+
+            const docSelect = document.getElementById('docRoomSelect');
+            const currentDocVal = docSelect.value || state.doctorActiveRoom;
+            docSelect.innerHTML = rooms.map(r => `<option value="${r}">${r}</option>`).join('');
+            if (rooms.includes(currentDocVal)) {
+                docSelect.value = currentDocVal;
+                state.doctorActiveRoom = currentDocVal;
+            } else {
+                state.doctorActiveRoom = rooms[0];
+                docSelect.value = rooms[0];
+            }
+
+            const modalSelect = document.getElementById('inputRoomSelect');
+            if (modalSelect) {
+                const curModalVal = modalSelect.value;
+                modalSelect.innerHTML = rooms.map(r => `<option value="${r}">${r}</option>`).join('');
+                if (rooms.includes(curModalVal)) modalSelect.value = curModalVal;
+            }
+
+            document.getElementById('docNameInput').value = getCurrentDoctorName();
+        }
+
+        function renderSettingsRoomList() {
+            const container = document.getElementById('settingsRoomList');
+            if (!container) return;
+            const rooms = getAvailableRooms();
+            container.innerHTML = rooms.map(r => `
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-medical-700 dark:text-cyan-300 border border-slate-300 dark:border-slate-700 text-xs font-semibold">
+                    ${r}
+                    <button type="button" onclick="removeRoomFromSettings('${r}')" class="text-rose-500 hover:text-rose-600 dark:hover:text-rose-300 ml-1.5 px-1 py-0.5 rounded hover:bg-rose-500/20 transition cursor-pointer" title="Xóa phòng này"><i class="fa-solid fa-xmark"></i></button>
+                </span>
+            `).join('');
+        }
+
+        function addNewRoomFromSettings() {
+            const input = document.getElementById('newRoomInputText');
+            const val = input.value.trim();
+            if (val && !state.customRooms.includes(val)) {
+                state.customRooms.push(val);
+                if (!state.roomDoctors[val]) state.roomDoctors[val] = 'Người Hỗ Trợ';
+                localStorage.setItem('hospital_custom_rooms', JSON.stringify(state.customRooms));
+                localStorage.setItem('hospital_room_doctors', JSON.stringify(state.roomDoctors));
+                input.value = '';
+                renderAll();
+                renderSettingsRoomList();
+            }
+        }
+
+        function promptAddRoom() {
+            const val = prompt("Nhập tên phòng/ban mới muốn thêm:");
+            if (val && val.trim()) {
+                const roomName = val.trim();
+                if (!state.customRooms.includes(roomName)) {
+                    state.customRooms.push(roomName);
+                    if (!state.roomDoctors[roomName]) state.roomDoctors[roomName] = 'Người Hỗ Trợ';
+                    localStorage.setItem('hospital_custom_rooms', JSON.stringify(state.customRooms));
+                    localStorage.setItem('hospital_room_doctors', JSON.stringify(state.roomDoctors));
+                }
+                updateRoomDropdowns();
+                document.getElementById('inputRoomSelect').value = roomName;
+            }
+        }
+
+        function removeRoomFromSettings(roomName) {
+            const rooms = getAvailableRooms();
+            if (rooms.length <= 1) {
+                alert("Cần giữ lại ít nhất một phòng trong hệ thống!");
+                return;
+            }
+            if (confirm(`Bạn có chắc chắn muốn xóa "${roomName}" không?`)) {
+                state.customRooms = state.customRooms.filter(r => r !== roomName);
+                delete state.roomDoctors[roomName];
+                localStorage.setItem('hospital_custom_rooms', JSON.stringify(state.customRooms));
+                localStorage.setItem('hospital_room_doctors', JSON.stringify(state.roomDoctors));
+                renderAll();
+                renderSettingsRoomList();
+            }
+        }
+
+        function playDingDong(onFinished) {
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+
+                const now = audioCtx.currentTime;
+
+                const osc1 = audioCtx.createOscillator();
+                const gain1 = audioCtx.createGain();
+                osc1.type = 'sine';
+                osc1.frequency.setValueAtTime(880, now);
+                gain1.gain.setValueAtTime(0.3, now);
+                gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+                osc1.connect(gain1);
+                gain1.connect(audioCtx.destination);
+                osc1.start(now);
+                osc1.stop(now + 0.8);
+
+                const osc2 = audioCtx.createOscillator();
+                const gain2 = audioCtx.createGain();
+                osc2.type = 'sine';
+                osc2.frequency.setValueAtTime(659.25, now + 0.4);
+                gain2.gain.setValueAtTime(0.3, now + 0.4);
+                gain2.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+                osc2.connect(gain2);
+                gain2.connect(audioCtx.destination);
+                osc2.start(now + 0.4);
+                osc2.stop(now + 1.2);
+
+                if (onFinished) {
+                    setTimeout(onFinished, 1300);
+                }
+            } catch (e) {
+                if (onFinished) onFinished();
+            }
+        }
+
+        function docTenGoogle(name, onEnded) {
+            const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(name)}&tl=vi&client=tw-ob`;
+            const audio = new Audio(url);
+            audio.playbackRate = state.speechRate;
+            if (onEnded) { audio.onended = onEnded; audio.onerror = onEnded; }
+            audio.play().catch(() => { if (onEnded) onEnded(); });
+        }
+
+        function triggerSpotlightEffect() {
+            const card = document.getElementById('tvActiveCardContainer');
+            if (!card) return;
+            card.classList.add('animate-spotlight');
+            if (spotlightTimer) clearTimeout(spotlightTimer);
+            spotlightTimer = setTimeout(() => {
+                card.classList.remove('animate-spotlight');
+            }, 7000);
+        }
+
+        function speakCall(stt, name, room) {
+            document.getElementById('popupSTT').innerText = stt;
+            document.getElementById('popupName').innerText = name;
+            document.getElementById('popupRoom').innerText = room;
+            document.getElementById('callPopupModal').classList.remove('hidden');
+
+            if (state.audioEnabled) {
+                playDingDong(() => {
+                    triggerSpotlightEffect();
+                    docTenGoogle(`Xin mời ${name}, số thứ tự ${stt}, vào ${room}.`, () => {
+                        setTimeout(() => closeCallPopup(), 1500);
+                    });
+                });
+            } else {
+                triggerSpotlightEffect();
+                setTimeout(() => closeCallPopup(), 3000);
+            }
+        }
+
+        function testVoiceCall() {
+            state.speechRate = parseFloat(document.getElementById('cfgSpeechRate').value);
+            state.speechPitch = parseFloat(document.getElementById('cfgSpeechPitch').value);
+            speakCall('A-100', 'NGUYỄN VĂN TEST', state.doctorActiveRoom);
+        }
+
+        function closeCallPopup() { document.getElementById('callPopupModal').classList.add('hidden'); }
+
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('liveClock').innerText = now.toLocaleTimeString('vi-VN', { hour12: false });
+            document.getElementById('liveDate').innerText = now.toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: '2-digit', day: '2-digit' });
+        }
+
+        function renderAll() {
+            updateRoomDropdowns();
+            renderTVDisplay();
+            renderDoctorPanel();
+        }
+
+        function renderTVDisplay() {
+            const examiningList = state.patients.filter(p => p.status === 'examining');
+            const currentPatient = (state.currentRoomFilter === 'ALL')
+                ? examiningList[0]
+                : examiningList.find(p => p.room === state.currentRoomFilter) || examiningList[0];
+
+            const activeRoom = currentPatient ? currentPatient.room : (state.currentRoomFilter !== 'ALL' ? state.currentRoomFilter : state.doctorActiveRoom);
+            const activeDoctor = state.roomDoctors[activeRoom] || 'Người Hỗ Trợ';
+
+            if (currentPatient) {
+                document.getElementById('tvCurrentSTT').innerText = currentPatient.stt;
+                document.getElementById('tvCurrentName').innerText = currentPatient.name;
+                document.getElementById('tvCurrentYOB').innerText = currentPatient.yob;
+                document.getElementById('tvCurrentRoom').innerText = currentPatient.room;
+                document.getElementById('tvCurrentDoctor').innerText = currentPatient.doctor || activeDoctor;
+            } else {
+                document.getElementById('tvCurrentSTT').innerText = '--';
+                document.getElementById('tvCurrentName').innerText = 'CHƯA CÓ NGƯỜI HỖ TRỢ';
+                document.getElementById('tvCurrentYOB').innerText = '----';
+                document.getElementById('tvCurrentRoom').innerText = activeRoom;
+                document.getElementById('tvCurrentDoctor').innerText = activeDoctor;
+            }
+
+            const waitingGrid = document.getElementById('tvWaitingGrid');
+            const emptyState = document.getElementById('tvEmptyState');
+            let waitingPatients = state.patients.filter(p => p.status === 'waiting');
+            if (state.currentRoomFilter !== 'ALL') {
+                waitingPatients = waitingPatients.filter(p => p.room === state.currentRoomFilter);
+            }
+
+            document.getElementById('waitingCountBadge').innerText = `${waitingPatients.length} Đang chờ`;
+            if (waitingPatients.length === 0) {
+                waitingGrid.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            waitingGrid.innerHTML = waitingPatients.map((p, idx) => `
+                <div class="bg-slate-50 dark:bg-slate-800/80 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 flex items-center justify-between shadow-sm transition-colors">
+                    <div class="flex items-center gap-3">
+                        <span class="w-10 h-10 rounded-xl bg-medical-500/10 text-medical-600 dark:text-cyan-400 font-extrabold flex items-center justify-center font-mono text-base border border-slate-200 dark:border-slate-700">
+                            ${p.stt}
+                        </span>
+                        <div>
+                            <h4 class="font-bold text-slate-800 dark:text-slate-100 text-sm uppercase">${p.name}</h4>
+                            <p class="text-[11px] text-slate-500 dark:text-slate-400 font-medium">NS: ${p.yob} • <span class="text-medical-600 dark:text-cyan-400">${p.room}</span></p>
+                        </div>
+                    </div>
+                    <span class="px-2.5 py-1 rounded-lg text-[10px] font-extrabold uppercase ${idx === 0 ? 'bg-amber-500/15 text-amber-600 dark:text-amber-500 border border-amber-500/30 animate-pulse' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}">
+                        ${idx === 0 ? 'Chuẩn bị' : 'Đang chờ'}
+                    </span>
+                </div>
+            `).join('');
+        }
+
+        function renderDoctorPanel() {
+            const currentRoom = state.doctorActiveRoom;
+            const currentExamining = state.patients.find(p => p.room === currentRoom && p.status === 'examining');
+            
+            if (currentExamining) {
+                document.getElementById('docActivePatientName').innerText = currentExamining.name;
+                document.getElementById('docActiveSTT').innerText = currentExamining.stt;
+            } else {
+                document.getElementById('docActivePatientName').innerText = 'Chưa có người đang hỗ trợ';
+                document.getElementById('docActiveSTT').innerText = '--';
+            }
+
+            const roomQueue = state.patients.filter(p => p.room === currentRoom && p.status === 'waiting');
+            const tbody = document.getElementById('docQueueTableBody');
+
+            if (roomQueue.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-400">Không có người chờ trong phòng này</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = roomQueue.map(p => `
+                <tr class="hover:bg-slate-100 dark:hover:bg-slate-800/50 transition">
+                    <td class="p-3 font-mono font-bold text-medical-600 dark:text-cyan-400">${p.stt}</td>
+                    <td class="p-3 font-bold text-slate-800 dark:text-slate-200">${p.name}</td>
+                    <td class="p-3 text-slate-500 dark:text-slate-400">${p.yob}</td>
+                    <td class="p-3 text-right">
+                        <button type="button" onclick="directCallPatient('${p.id}')" class="px-2.5 py-1 bg-medical-500 text-white rounded-lg hover:bg-medical-600 font-bold text-[11px] cursor-pointer">Gọi ngay</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function updateStatusOnGoogleSheet(stt, status, doctorName = '') {
+            if (!state.googleSheetUrl) return;
+            try {
+                await fetch(state.googleSheetUrl, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify({ action: 'updateStatus', stt, status, doctor: doctorName })
+                });
+            } catch (e) {}
+        }
+
+        function callNextPatient() {
+            const room = state.doctorActiveRoom;
+            const currentDoc = getCurrentDoctorName();
+            state.patients.forEach(p => {
+                if (p.room === room && p.status === 'examining') {
+                    p.status = 'completed';
+                    updateStatusOnGoogleSheet(p.stt, 'completed', currentDoc);
+                }
+            });
+
+            const nextPatient = state.patients.find(p => p.room === room && p.status === 'waiting');
+            if (nextPatient) {
+                nextPatient.status = 'examining';
+                nextPatient.doctor = currentDoc;
+                saveState();
+                renderAll();
+                speakCall(nextPatient.stt, nextPatient.name, nextPatient.room);
+                updateStatusOnGoogleSheet(nextPatient.stt, 'examining', currentDoc);
+            } else {
+                alert(`Không còn ai đang chờ tại ${room}.`);
+                saveState();
+                renderAll();
+            }
+        }
+
+        function recallCurrentPatient() {
+            const current = state.patients.find(p => p.room === state.doctorActiveRoom && p.status === 'examining');
+            const currentDoc = getCurrentDoctorName();
+            if (current) {
+                current.doctor = currentDoc;
+                saveState();
+                renderAll();
+                speakCall(current.stt, current.name, current.room);
+            } else {
+                alert("Hiện chưa có ai đang trong phòng!");
+            }
+        }
+
+        function completeCurrentPatient() {
+            const current = state.patients.find(p => p.room === state.doctorActiveRoom && p.status === 'examining');
+            const currentDoc = getCurrentDoctorName();
+            if (current) {
+                current.status = 'completed';
+                saveState();
+                renderAll();
+                updateStatusOnGoogleSheet(current.stt, 'completed', currentDoc);
+            }
+        }
+
+        function skipCurrentPatient() {
+            const current = state.patients.find(p => p.room === state.doctorActiveRoom && p.status === 'examining');
+            const currentDoc = getCurrentDoctorName();
+            if (current) {
+                current.status = 'skipped';
+                saveState();
+                renderAll();
+                updateStatusOnGoogleSheet(current.stt, 'skipped', currentDoc);
+            }
+        }
+
+        function directCallPatient(patientId) {
+            const patient = state.patients.find(p => p.id == patientId);
+            const currentDoc = getCurrentDoctorName();
+            if (patient) {
+                state.patients.forEach(p => {
+                    if (p.room === patient.room && p.status === 'examining') {
+                        p.status = 'completed';
+                        updateStatusOnGoogleSheet(p.stt, 'completed', currentDoc);
+                    }
+                });
+                patient.status = 'examining';
+                patient.doctor = currentDoc;
+                saveState();
+                renderAll();
+                speakCall(patient.stt, patient.name, patient.room);
+                updateStatusOnGoogleSheet(patient.stt, 'examining', currentDoc);
+            }
+        }
+
+        async function syncDataFromSource() {
+            if (!state.googleSheetUrl || isSyncing) return;
+            isSyncing = true;
+            try {
+                const res = await fetch(state.googleSheetUrl, { cache: 'no-store' });
+                const sheetData = await res.json();
+                if (Array.isArray(sheetData) && sheetData.length > 0) {
+                    state.patients = sheetData.map((item, idx) => ({
+                        id: idx + 1,
+                        stt: item.stt || `A-${idx+1}`,
+                        name: item.name || '',
+                        yob: item.yob || '1990',
+                        room: item.room || 'Phòng 01',
+                        doctor: item.doctor || state.roomDoctors[item.room] || 'Người Hỗ Trợ',
+                        status: item.status || 'waiting'
+                    }));
+                    saveState();
+                    renderAll();
+                }
+            } catch (e) {
+            } finally {
+                isSyncing = false;
+            }
+        }
+
+        function startPolling() {
+            if (autoSyncTimer) clearInterval(autoSyncTimer);
+            if (state.googleSheetUrl) {
+                syncDataFromSource();
+                autoSyncTimer = setInterval(syncDataFromSource, 8000);
+            }
+        }
+
+        function switchView(mode) {
+            const tvView = document.getElementById('viewTVMode');
+            const docView = document.getElementById('viewDoctorMode');
+            const btnTV = document.getElementById('btnViewTV');
+            const btnDoc = document.getElementById('btnViewDoctor');
+
+            if (mode === 'tv') {
+                tvView.classList.remove('hidden');
+                docView.classList.add('hidden');
+                btnTV.className = 'px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 bg-medical-600 text-white shadow';
+                btnDoc.className = 'px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white';
+            } else {
+                tvView.classList.add('hidden');
+                docView.classList.remove('hidden');
+                btnDoc.className = 'px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 bg-medical-600 text-white shadow';
+                btnTV.className = 'px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white';
+            }
+        }
+
+        function filterQueue() {
+            state.currentRoomFilter = document.getElementById('tvRoomFilter').value;
+            renderTVDisplay();
+        }
+
+        function onDoctorRoomChange() {
+            state.doctorActiveRoom = document.getElementById('docRoomSelect').value;
+            document.getElementById('docNameInput').value = getCurrentDoctorName();
+            renderDoctorPanel();
+            renderTVDisplay();
+        }
+
+        function saveDoctorInfo() {
+            const room = state.doctorActiveRoom;
+            const newName = document.getElementById('docNameInput').value;
+            state.roomDoctors[room] = newName;
+            localStorage.setItem('hospital_room_doctors', JSON.stringify(state.roomDoctors));
+            
+            const current = state.patients.find(p => p.room === room && p.status === 'examining');
+            if (current) {
+                current.doctor = newName;
+            }
+            saveState();
+            renderTVDisplay();
+        }
+        
+        function toggleAudio() {
+            state.audioEnabled = !state.audioEnabled;
+            document.getElementById('audioIcon').className = state.audioEnabled ? 'fa-solid fa-volume-high text-emerald-500' : 'fa-solid fa-volume-xmark text-slate-400';
+        }
+
+        function toggleDarkMode() { document.documentElement.classList.toggle('dark'); }
+
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(() => {});
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen();
+            }
+        }
+
+        function openAddPatientModal() {
+            updateRoomDropdowns();
+            document.getElementById('addPatientModal').classList.remove('hidden');
+        }
+        function closeAddPatientModal() { document.getElementById('addPatientModal').classList.add('hidden'); }
+
+        async function handleAddPatient(e) {
+            e.preventDefault();
+            const roomVal = document.getElementById('inputRoomSelect').value;
+            const docVal = state.roomDoctors[roomVal] || 'Người Hỗ Trợ';
+            const newP = {
+                id: Date.now(),
+                stt: document.getElementById('inputSTT').value.toUpperCase(),
+                name: document.getElementById('inputName').value.toUpperCase(),
+                yob: document.getElementById('inputYOB').value,
+                room: roomVal,
+                doctor: docVal,
+                status: 'waiting'
+            };
+
+            const existingIdx = state.patients.findIndex(p => p.stt === newP.stt);
+            if (existingIdx >= 0) {
+                state.patients[existingIdx] = { ...state.patients[existingIdx], ...newP };
+            } else {
+                state.patients.push(newP);
+            }
+
+            saveState();
+            renderAll();
+            closeAddPatientModal();
+            document.getElementById('addPatientForm').reset();
+
+            if (state.googleSheetUrl) {
+                try {
+                    await fetch(state.googleSheetUrl, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: { 'Content-Type': 'text/plain' },
+                        body: JSON.stringify({ action: 'add', stt: newP.stt, name: newP.name, yob: newP.yob, room: newP.room, doctor: newP.doctor, status: newP.status })
+                    });
+                } catch(err) {}
+            }
+        }
+
+        function openSettingsModal() {
+            renderSettingsRoomList();
+            document.getElementById('settingsModal').classList.remove('hidden');
+        }
+
+        function closeSettingsModal() {
+            state.googleSheetUrl = document.getElementById('cfgSheetUrl').value;
+            state.speechRate = parseFloat(document.getElementById('cfgSpeechRate').value);
+            state.speechPitch = parseFloat(document.getElementById('cfgSpeechPitch').value);
+
+            localStorage.setItem('hospital_sheet_url', state.googleSheetUrl);
+            localStorage.setItem('hospital_speech_rate', state.speechRate);
+            localStorage.setItem('hospital_speech_pitch', state.speechPitch);
+
+            document.getElementById('settingsModal').classList.add('hidden');
+            startPolling();
+        }
+
+        function saveState() {
+            localStorage.setItem('hospital_patients', JSON.stringify(state.patients));
+        }
+    </script>
+</body>
+</html>
